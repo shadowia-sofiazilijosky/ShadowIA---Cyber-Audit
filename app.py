@@ -121,7 +121,7 @@ with col2:
 st.markdown("---")
 
 # TU CLAVE DIRECTA
-API_KEY = "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"
+API_KEY = st.secrets["GROQ_API_KEY"]
 
 def analizar_codigo_ia(texto):
     url = "https://api.groq.com/openai/v1/chat/completions"
@@ -186,3 +186,4 @@ if st.button("INICIAR AUDITORÍA DE SISTEMAS"):
                 st.error(f"Fallo en motor PDF: {e}")
     else:
         st.error("Error: No se detectó código para procesar.")
+
