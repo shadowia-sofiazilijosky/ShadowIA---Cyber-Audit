@@ -56,7 +56,7 @@ with col2:
 st.markdown("---")
 
 # 4. FUNCIÓN DE ANÁLISIS (Tu Cerebro IA)
-API_KEY = "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"
+API_KEY = st.secrets["GROQ_API_KEY"]
 
 def analizar_codigo(texto):
     url = "https://api.groq.com/openai/v1/chat/completions"
@@ -107,4 +107,5 @@ if st.button("EJECUTAR ESCANEO SHADOW"):
             except Exception as e:
                 st.error(f"No se pudo generar el PDF: {e}")
     else:
+
         st.error("Por favor, ingresa código o sube un archivo.")
