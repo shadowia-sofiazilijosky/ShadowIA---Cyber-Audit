@@ -3,7 +3,9 @@ import requests
 from fpdf import FPDF
 from datetime import datetime
 
+# ==========================================
 # 1. CONFIGURACIÓN DE MARCA ELITE
+# ==========================================
 CIAN_NEON = (0, 255, 255)
 FONDO_OSCURO = (14, 17, 23)
 GRIS_BLOQUE = (26, 28, 35)
@@ -27,7 +29,9 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
+# ==========================================
 # 2. MOTOR DE GENERACIÓN PDF PREMIUM
+# ==========================================
 def generar_pdf_elite(resultado):
     class PDF(FPDF):
         def header(self):
@@ -39,7 +43,7 @@ def generar_pdf_elite(resultado):
             try: self.image("logo.png", 15, 12, 35)
             except: pass
             
-            # Cabecera Técnica (Startup Metadata)
+            # Cabecera Técnica
             self.set_font("Helvetica", 'B', 9)
             self.set_text_color(0, 255, 255)
             fecha_str = datetime.now().strftime("%d/%m/%Y")
@@ -65,7 +69,7 @@ def generar_pdf_elite(resultado):
     pdf = PDF()
     pdf.add_page()
     
-    # RESUMEN EJECUTIVO (Dashboard de Riesgo)
+    # Resumen Ejecutivo
     pdf.set_font("Helvetica", 'B', 18)
     pdf.set_text_color(0, 255, 255)
     pdf.cell(0, 10, "EXECUTIVE AUDIT SUMMARY", ln=True)
@@ -81,13 +85,12 @@ def generar_pdf_elite(resultado):
     pdf.cell(0, 7, "RIESGO DETECTADO: NIVEL CRITICO - ACCION REQUERIDA", ln=True)
     pdf.ln(12)
 
-    # PROCESAMIENTO DE HALLAZGOS
+    # Procesamiento de Hallazgos
     lineas = resultado.split('\n')
     for linea in lineas:
         linea_limpia = linea.encode('latin-1', 'ignore').decode('latin-1')
         if not linea_limpia.strip(): continue
 
-        # Formateo de Vulnerabilidades
         if linea.strip().startswith(('###', '1.', '2.', 'Análisis', '**')):
             pdf.ln(4)
             pdf.set_font("Helvetica", 'B', 13)
@@ -97,16 +100,12 @@ def generar_pdf_elite(resultado):
             pdf.set_text_color(255, 51, 51)
             pdf.cell(0, 5, "[ SEVERITY: HIGH ]", ln=True)
             pdf.ln(2)
-        
-        # Formateo de Bloques de Código de Remedición
         elif any(x in linea for x in ['python', 'query =', 'def ', 'import ', 'cursor.', 'hashlib']):
             pdf.set_fill_color(20, 22, 28)
             pdf.set_draw_color(0, 255, 255)
             pdf.set_text_color(170, 170, 170)
             pdf.set_font("Courier", size=9)
             pdf.multi_cell(190, 6, txt=linea_limpia, border=1, fill=True)
-        
-        # Texto Descriptivo
         else:
             pdf.set_font("Helvetica", size=10)
             pdf.set_text_color(230, 230, 230)
@@ -114,7 +113,9 @@ def generar_pdf_elite(resultado):
 
     return pdf.output(dest='S').encode('latin-1')
 
+# ==========================================
 # 3. INTERFAZ Y LOGICA DE LA APP
+# ==========================================
 col1, col2 = st.columns([1, 5])
 with col1:
     try: st.image("logo.png", width=140)
@@ -125,20 +126,35 @@ with col2:
 
 st.markdown("---")
 
+# USAMOS TU CLAVE DIRECTA
 API_KEY = "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"
 
 def analizar_codigo_ia(texto):
     url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {API_KEY}", 
+        "Content-Type": "application/json"
+    }
     data = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "llama3-8b-8192", # Modelo optimizado para velocidad y estabilidad
         "messages": [
             {"role": "system", "content": "Eres ShadowIA, una IA de auditoría de seguridad de nivel militar. Identifica fallos como Inyección SQL y contraseñas expuestas. Responde con lenguaje técnico profesional, soluciones con código corregido y una conclusión de riesgo."},
             {"role": "user", "content": f"Realiza una auditoría profunda de este código:\n\n{texto}"}
         ]
     }
-    response = requests.post(url, headers=headers, json=data)
-    return response.json()['choices'][0]['message']['content'] if response.status_code == 200 else "Error de enlace."
+    
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        
+        # DEBUG LOG: Veremos esto en "Manage App" si algo falla
+        print(f"DEBUG GROQ: {response.status_code} - {response.text}")
+        
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            return f"Error de enlace (Código: {response.status_code}). Revisa la API Key en los logs."
+    except Exception as e:
+        return f"Error de conexión: {str(e)}"
 
 opcion = st.radio("MÉTODO DE ENTRADA:", ["Terminal de Código", "Carga de Script (.py)"])
 codigo_fuente = ""
@@ -157,15 +173,16 @@ if st.button("INICIAR AUDITORÍA DE SISTEMAS"):
             st.info(reporte_texto)
             
             try:
-                data_pdf = generar_pdf_elite(reporte_texto)
-                st.download_button(
-                    label="📥 DESCARGAR REPORTE DE INTELIGENCIA (PDF)",
-                    data=data_pdf,
-                    file_name=f"SHADOWIA_AUDIT_{datetime.now().strftime('%Y%m%d')}.pdf",
-                    mime="application/pdf"
-                )
+                # Solo generamos PDF si hubo una respuesta exitosa
+                if "Error de enlace" not in reporte_texto:
+                    data_pdf = generar_pdf_elite(reporte_texto)
+                    st.download_button(
+                        label="📥 DESCARGAR REPORTE DE INTELIGENCIA (PDF)",
+                        data=data_pdf,
+                        file_name=f"SHADOWIA_AUDIT_{datetime.now().strftime('%Y%m%d')}.pdf",
+                        mime="application/pdf"
+                    )
             except Exception as e:
                 st.error(f"Fallo en motor PDF: {e}")
     else:
         st.error("Error: No se detectó código para procesar.")
-
