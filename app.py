@@ -3,12 +3,12 @@ import requests
 from fpdf import FPDF
 
 # 1. CONFIGURACIÓN DE MARCA (Cian Neón)
-CIAN_NEON = (0, 255, 255)  # En formato RGB para FPDF
-FONDO_OSCURO = (14, 17, 23) # En formato RGB para FPDF
+CIAN_NEON_RGB = (0, 255, 255)
+FONDO_OSCURO_RGB = (14, 17, 23)
 
 st.set_page_config(page_title="ShadowIA - Cyber Audit", page_icon="🛡️", layout="wide")
 
-# Estilo CSS para la web
+# Estilo CSS para la interfaz web
 st.markdown(f"""
     <style>
     .main {{ background-color: #0E1117; color: white; }}
@@ -27,9 +27,8 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. FUNCIÓN PARA GENERAR EL REPORTE PDF PROFESIONAL
+# 2. FUNCIÓN PARA GENERAR EL REPORTE PDF CON ESTILO HACKER
 def generar_pdf(resultado):
-    # Creamos una clase personalizada para el fondo y logo
     class PDF(FPDF):
         def header(self):
             # Pintar el fondo de toda la página de negro
@@ -40,11 +39,11 @@ def generar_pdf(resultado):
             try:
                 self.image("logo.png", 10, 8, 30)
             except:
-                pass # Si no hay logo, continúa sin error
+                pass
             
-            # Título del Informe
+            # Título del Informe en Cian
             self.set_font("Arial", 'B', 16)
-            self.set_text_color(0, 255, 255) # Cian Neón
+            self.set_text_color(0, 255, 255)
             self.cell(0, 10, "INFORME DE AUDITORIA - SHADOWIA", ln=True, align='C')
             self.ln(20)
 
@@ -57,19 +56,30 @@ def generar_pdf(resultado):
     pdf = PDF()
     pdf.add_page()
     
-    # Contenido del Análisis
-    pdf.set_font("Arial", size=11)
-    pdf.set_text_color(255, 255, 255) # Texto en blanco para que resalte
-    
-    # Limpiar texto para evitar errores de codificación
-    texto_limpio = resultado.encode('latin-1', 'ignore').decode('latin-1')
-    
-    # Escribir el resultado
-    pdf.multi_cell(0, 8, txt=texto_limpio)
+    # Procesar el texto para dar formato a títulos y códigos
+    lineas = resultado.split('\n')
+    for linea in lineas:
+        linea_limpia = linea.encode('latin-1', 'ignore').decode('latin-1')
+        
+        # Detectar títulos o secciones importantes para poner en Cian
+        if linea.strip().startswith(('###', '1.', '2.', 'Análisis', '**')):
+            pdf.set_font("Arial", 'B', 12)
+            pdf.set_text_color(0, 255, 255)
+            pdf.multi_cell(0, 10, txt=linea_limpia)
+        # Detectar bloques de código
+        elif 'python' in linea or 'query =' in linea or 'def ' in linea:
+            pdf.set_font("Courier", size=10)
+            pdf.set_text_color(180, 180, 180) # Gris claro
+            pdf.multi_cell(0, 7, txt=linea_limpia)
+        else:
+            # Texto normal en blanco
+            pdf.set_font("Arial", size=11)
+            pdf.set_text_color(255, 255, 255)
+            pdf.multi_cell(0, 8, txt=linea_limpia)
     
     return pdf.output(dest='S').encode('latin-1')
 
-# 3. ENCABEZADO EN LA WEB
+# 3. ENCABEZADO DE LA PÁGINA
 col1, col2 = st.columns([1, 4])
 with col1:
     try:
@@ -83,7 +93,7 @@ with col2:
 
 st.markdown("---")
 
-# 4. FUNCIÓN DE ANÁLISIS
+# 4. CONFIGURACIÓN DE LA IA (SECRETOS)
 API_KEY = st.secrets["GROQ_API_KEY"]
 
 def analizar_codigo(texto):
@@ -92,7 +102,7 @@ def analizar_codigo(texto):
     data = {
         "model": "llama-3.3-70b-versatile",
         "messages": [
-            {"role": "system", "content": "Eres ShadowIA, un experto en ciberseguridad. Analiza vulnerabilidades (como Inyección SQL y contraseñas expuestas) y da soluciones directas."},
+            {"role": "system", "content": "Eres ShadowIA, un experto en ciberseguridad. Analiza vulnerabilidades críticas como Inyección SQL y contraseñas expuestas y da soluciones técnicas directas."},
             {"role": "user", "content": f"Analiza este código buscando fallos de seguridad:\n\n{texto}"}
         ]
     }
@@ -100,9 +110,9 @@ def analizar_codigo(texto):
     if response.status_code == 200:
         return response.json()['choices'][0]['message']['content']
     else:
-        return f"Error en la conexión: {response.status_code}"
+        return f"Error en la conexión con la IA: {response.status_code}"
 
-# 5. SECCIÓN DE ENTRADA
+# 5. INTERFAZ DE USUARIO
 opcion = st.radio("Elige método de entrada:", ["Pegar Código", "Subir Archivo .py"])
 codigo_final = ""
 
@@ -114,7 +124,7 @@ else:
         codigo_final = archivo.read().decode("utf-8")
         st.code(codigo_final, language="python")
 
-# 6. BOTÓN DE ACCIÓN
+# 6. EJECUCIÓN Y DESCARGA
 if st.button("EJECUTAR ESCANEO SHADOW"):
     if codigo_final:
         with st.spinner("🕵️ ShadowIA rastreando vulnerabilidades..."):
@@ -131,6 +141,7 @@ if st.button("EJECUTAR ESCANEO SHADOW"):
                     mime="application/pdf"
                 )
             except Exception as e:
-                st.error(f"Error al generar PDF: {e}")
+                st.error(f"Error al generar el PDF con diseño: {e}")
     else:
-        st.error("Por favor, ingresa código o sube un archivo.")
+        st.error("Por favor, ingresa código o sube un archivo para analizar.")
+
