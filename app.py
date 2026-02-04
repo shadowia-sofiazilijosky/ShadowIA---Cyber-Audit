@@ -3,152 +3,168 @@ import requests
 from fpdf import FPDF
 from datetime import datetime
 
-# 1. CONFIGURACIÓN DE MARCA PREMIUM
-CIAN_NEON_RGB = (0, 255, 255)
-FONDO_OSCURO_RGB = (14, 17, 23)
+# 1. CONFIGURACIÓN DE MARCA ELITE
+CIAN_NEON = (0, 255, 255)
+FONDO_OSCURO = (14, 17, 23)
 GRIS_BLOQUE = (26, 28, 35)
+ROJO_ERROR = (255, 51, 51)
 
-st.set_page_config(page_title="ShadowIA - Cyber Audit", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="ShadowIA - Cyber Audit Platform", page_icon="🛡️", layout="wide")
 
-# Estilo CSS para la interfaz web
+# Estilo CSS para la Web
 st.markdown(f"""
     <style>
     .main {{ background-color: #0E1117; color: white; }}
-    .stTextArea textarea {{ background-color: #1A1C23; color: #00FFFF; border: 1px solid #00FFFF; }}
+    .stTextArea textarea {{ background-color: #1A1C23; color: #00FFFF; border: 1px solid #00FFFF; font-family: 'Courier New'; }}
     .stButton>button {{ 
         background-color: #00FFFF; color: black; font-weight: bold; 
-        border-radius: 8px; width: 100%; border: none;
+        border-radius: 4px; width: 100%; border: none; height: 3em;
+        transition: 0.3s;
     }}
-    h1, h2, h3 {{ color: #00FFFF !important; }}
-    .stFileUploader {{ border: 1px dashed #00FFFF; border-radius: 10px; padding: 10px; }}
+    .stButton>button:hover {{ background-color: #00CCCC; transform: scale(1.01); }}
+    h1, h2, h3 {{ color: #00FFFF !important; font-family: 'Segoe UI', sans-serif; }}
     .stInfo {{ background-color: #1A1C23; color: white; border: 1px solid #00FFFF; }}
     </style>
     """, unsafe_allow_html=True)
 
-# 2. FUNCIÓN PARA GENERAR EL REPORTE PDF "PREMIUM"
-def generar_pdf(resultado):
+# 2. MOTOR DE GENERACIÓN PDF PREMIUM
+def generar_pdf_elite(resultado):
     class PDF(FPDF):
         def header(self):
-            # Fondo negro total
+            # Fondo de página completo
             self.set_fill_color(14, 17, 23)
             self.rect(0, 0, 210, 297, 'F')
             
-            # Logo en la cabecera
-            try:
-                self.image("logo.png", 15, 12, 35)
-            except:
-                pass
+            # Logo y Decoración
+            try: self.image("logo.png", 15, 12, 35)
+            except: pass
             
-            # Metadatos del informe (Startup Style)
-            self.set_font("Arial", 'B', 8)
+            # Cabecera Técnica (Startup Metadata)
+            self.set_font("Helvetica", 'B', 9)
             self.set_text_color(0, 255, 255)
-            fecha_hoy = datetime.now().strftime("%d/%m/%Y")
-            self.set_xy(150, 12)
-            self.cell(45, 5, f"FECHA: {fecha_hoy}", ln=True, align='R')
-            self.set_x(150)
-            self.cell(45, 5, "ID: SHW-AUD-9921", ln=True, align='R')
-            self.set_x(150)
-            self.cell(45, 5, "STATUS: CRITICAL", ln=True, align='R')
+            fecha_str = datetime.now().strftime("%d/%m/%Y")
+            self.set_xy(140, 12)
+            self.cell(55, 6, f"REPORT ID: SHW-{datetime.now().strftime('%M%S')}", ln=True, align='R')
+            self.set_x(140)
+            self.cell(55, 6, f"DATE: {fecha_str}", ln=True, align='R')
+            self.set_x(140)
+            self.set_text_color(255, 51, 51)
+            self.cell(55, 6, "CLASSIFICATION: CRITICAL", ln=True, align='R')
             
-            self.ln(25)
             self.set_draw_color(0, 255, 255)
-            self.set_line_width(0.5)
-            self.line(10, 35, 200, 35) # Línea decorativa neón
+            self.set_line_width(0.3)
+            self.line(10, 38, 200, 38)
+            self.ln(25)
 
         def footer(self):
             self.set_y(-15)
-            self.set_font("Arial", 'I', 8)
+            self.set_font("Helvetica", 'I', 8)
             self.set_text_color(0, 255, 255)
-            self.cell(0, 10, f'CONFIDENTIAL - SHADOWIA CYBER AUDIT - PÁGINA {self.page_no()}', align='C')
+            self.cell(0, 10, f'PROPRIETARY & CONFIDENTIAL - SHADOWIA INTEL - PÁGINA {self.page_no()}', align='C')
 
     pdf = PDF()
     pdf.add_page()
     
-    # TÍTULO PRINCIPAL
-    pdf.set_font("Arial", 'B', 20)
+    # RESUMEN EJECUTIVO (Dashboard de Riesgo)
+    pdf.set_font("Helvetica", 'B', 18)
     pdf.set_text_color(0, 255, 255)
-    pdf.cell(0, 15, "INFORME DE SEGURIDAD ELITE", ln=True, align='L')
-    pdf.ln(5)
+    pdf.cell(0, 10, "EXECUTIVE AUDIT SUMMARY", ln=True)
+    
+    pdf.set_fill_color(26, 28, 35)
+    pdf.rect(10, 52, 190, 25, 'F')
+    pdf.set_xy(15, 55)
+    pdf.set_font("Helvetica", 'B', 11)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(0, 7, "OBJETIVO: ANALISIS DE CODIGO ESTATICO (SAST)", ln=True)
+    pdf.set_x(15)
+    pdf.set_text_color(255, 51, 51)
+    pdf.cell(0, 7, "RIESGO DETECTADO: NIVEL CRITICO - ACCION REQUERIDA", ln=True)
+    pdf.ln(12)
 
-    # PROCESAMIENTO DE BLOQUES
+    # PROCESAMIENTO DE HALLAZGOS
     lineas = resultado.split('\n')
     for linea in lineas:
         linea_limpia = linea.encode('latin-1', 'ignore').decode('latin-1')
         if not linea_limpia.strip(): continue
 
-        # Si es un Título (Vulnerabilidad)
+        # Formateo de Vulnerabilidades
         if linea.strip().startswith(('###', '1.', '2.', 'Análisis', '**')):
-            pdf.ln(5)
-            pdf.set_font("Arial", 'B', 14)
+            pdf.ln(4)
+            pdf.set_font("Helvetica", 'B', 13)
             pdf.set_text_color(0, 255, 255)
-            pdf.multi_cell(0, 10, txt=linea_limpia.replace('#',''))
+            pdf.cell(0, 10, f"> {linea_limpia.replace('#','')}", ln=True)
+            pdf.set_font("Helvetica", 'B', 8)
+            pdf.set_text_color(255, 51, 51)
+            pdf.cell(0, 5, "[ SEVERITY: HIGH ]", ln=True)
+            pdf.ln(2)
         
-        # Si es Código (Caja Gris con borde Neón)
-        elif any(x in linea for x in ['python', 'query =', 'def ', 'import ', 'cursor.']):
-            pdf.set_fill_color(26, 28, 35) # Gris medio oscuro
-            pdf.set_draw_color(0, 255, 255) # Borde Cian
-            pdf.set_text_color(200, 200, 200) # Texto gris claro
+        # Formateo de Bloques de Código de Remedición
+        elif any(x in linea for x in ['python', 'query =', 'def ', 'import ', 'cursor.', 'hashlib']):
+            pdf.set_fill_color(20, 22, 28)
+            pdf.set_draw_color(0, 255, 255)
+            pdf.set_text_color(170, 170, 170)
             pdf.set_font("Courier", size=9)
-            # Dibujamos el bloque de código
-            ancho_pag = 190
-            pdf.multi_cell(ancho_pag, 7, txt=linea_limpia, border=1, fill=True)
+            pdf.multi_cell(190, 6, txt=linea_limpia, border=1, fill=True)
         
-        # Texto Normal
+        # Texto Descriptivo
         else:
-            pdf.set_font("Arial", size=11)
-            pdf.set_text_color(240, 240, 240) # Blanco casi puro
-            pdf.multi_cell(0, 8, txt=linea_limpia)
+            pdf.set_font("Helvetica", size=10)
+            pdf.set_text_color(230, 230, 230)
+            pdf.multi_cell(0, 7, txt=linea_limpia)
 
     return pdf.output(dest='S').encode('latin-1')
 
-# 3. INTERFAZ WEB (SE MANTIENE IGUAL)
-col1, col2 = st.columns([1, 4])
+# 3. INTERFAZ Y LOGICA DE LA APP
+col1, col2 = st.columns([1, 5])
 with col1:
-    try: st.image("logo.png", width=150)
-    except: st.write("🛡️")
+    try: st.image("logo.png", width=140)
+    except: st.title("🛡️")
 with col2:
-    st.title("SHADOW IA")
-    st.write("### Autonomous Security Code Auditor")
+    st.title("SHADOWIA CYBER AUDIT")
+    st.write("#### Enterprise-Grade AI Security Intelligence")
 
 st.markdown("---")
 
 API_KEY = st.secrets["GROQ_API_KEY"]
 
-def analizar_codigo(texto):
+def analizar_codigo_ia(texto):
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
     data = {
         "model": "llama-3.3-70b-versatile",
         "messages": [
-            {"role": "system", "content": "Eres ShadowIA, un auditor de élite. Analiza fallos como Inyección SQL y contraseñas expuestas. Responde con títulos claros y bloques de código de solución."},
-            {"role": "user", "content": f"Audita este código:\n\n{texto}"}
+            {"role": "system", "content": "Eres ShadowIA, una IA de auditoría de seguridad de nivel militar. Identifica fallos como Inyección SQL y contraseñas expuestas. Responde con lenguaje técnico profesional, soluciones con código corregido y una conclusión de riesgo."},
+            {"role": "user", "content": f"Realiza una auditoría profunda de este código:\n\n{texto}"}
         ]
     }
     response = requests.post(url, headers=headers, json=data)
-    if response.status_code == 200:
-        return response.json()['choices'][0]['message']['content']
-    return f"Error: {response.status_code}"
+    return response.json()['choices'][0]['message']['content'] if response.status_code == 200 else "Error de enlace."
 
-opcion = st.radio("Entrada:", ["Pegar Código", "Subir Archivo .py"])
-codigo_final = ""
-if opcion == "Pegar Código":
-    codigo_final = st.text_area("Pega el código:", height=250)
+opcion = st.radio("MÉTODO DE ENTRADA:", ["Terminal de Código", "Carga de Script (.py)"])
+codigo_fuente = ""
+
+if opcion == "Terminal de Código":
+    codigo_fuente = st.text_area("CONSOLA DE ENTRADA:", height=300, placeholder="Pega aquí el código sospechoso...")
 else:
-    archivo = st.file_uploader("Sube .py", type=["py"])
-    if archivo: codigo_final = archivo.read().decode("utf-8")
+    archivo_py = st.file_uploader("UPLOAD SOURCE FILE:", type=["py"])
+    if archivo_py: codigo_fuente = archivo_py.read().decode("utf-8")
 
-if st.button("EJECUTAR ESCANEO SHADOW"):
-    if codigo_final:
-        with st.spinner("🕵️ Auditando..."):
-            resultado = analizar_codigo(codigo_final)
-            st.info(resultado)
+if st.button("INICIAR AUDITORÍA DE SISTEMAS"):
+    if codigo_fuente:
+        with st.spinner("🕵️ Rastreando vulnerabilidades en el núcleo..."):
+            reporte_texto = analizar_codigo_ia(codigo_fuente)
+            st.markdown("### 🛠️ HALLAZGOS DE INTELIGENCIA")
+            st.info(reporte_texto)
+            
             try:
-                pdf_data = generar_pdf(resultado)
+                data_pdf = generar_pdf_elite(reporte_texto)
                 st.download_button(
-                    label="📥 DESCARGAR INFORME PREMIUM PDF",
-                    data=pdf_data,
-                    file_name="shadowia_premium_report.pdf",
+                    label="📥 DESCARGAR REPORTE DE INTELIGENCIA (PDF)",
+                    data=data_pdf,
+                    file_name=f"SHADOWIA_AUDIT_{datetime.now().strftime('%Y%m%d')}.pdf",
                     mime="application/pdf"
                 )
             except Exception as e:
-                st.error(f"Error PDF: {e}")
+                st.error(f"Fallo en motor PDF: {e}")
+    else:
+        st.error("Error: No se detectó código para procesar.")
